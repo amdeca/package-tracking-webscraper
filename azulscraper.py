@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from time import sleep
 from datetime import datetime
 import csv
+import os.path
 
 class AzulcargoScraper(object):
     def __init__(self):
@@ -37,21 +38,20 @@ class AzulcargoScraper(object):
         for container in soup.find_all('div', class_='panel panel-info')[2:]:
             document_data = []
             awb_number = input_list[index]
-            lista = container.find_all('div', class_='texto-medio')
+            header_list = container.find_all('div', class_='texto-medio')
             #Extract header information
             try:
-                awb_number = lista[1].text.strip()
-                volumes = lista[3].text.strip()
-                weight = lista[5].text.strip().replace(",",".")
-                emit_date = lista[7].text.strip()
-                delivery_date = lista[9].text.strip()
+                awb_number = header_list[1].text.strip()
+                volumes = header_list[3].text.strip()
+                weight = header_list[5].text.strip().replace(",",".")
+                emit_date = header_list[7].text.strip()
+                delivery_date = header_list[9].text.strip()
                 #delivery_date will be empty if package has not arrived yet
                 if delivery_date.isspace() == True:
                     delivery_date = 'N/A'
-                origin = lista[11].text.strip().replace(" ","").replace("\n","")
-                destination = lista[13].text.strip().replace(" ","").replace("\n","")
+                origin = header_list[11].text.strip().replace(" ","").replace("\n","")
+                destination = header_list[13].text.strip().replace(" ","").replace("\n","")
             except IndexError:
-                #awb_number = 'Invalid'
                 volumes = 'Invalid'
                 weight = 'Invalid'
                 emit_date = 'Invalid'
@@ -62,8 +62,8 @@ class AzulcargoScraper(object):
             try:    
                 #Extract table information
                 table = container.find('table')
-                chegada_list = []
-                embarque_list = []
+                arrival_list = []
+                ship_list = []
                 for tr in table.find_all('tr')[1:]:
                     td = tr.find_all('td')
                     #Check 'Details' field
@@ -72,11 +72,11 @@ class AzulcargoScraper(object):
                     arrival_date = 'N/A'
                     if 'Saída do voo' in td[1].text:
                         #ship_date = td[0].text
-                        embarque_list.append(td[0].text)
+                        ship_list.append(td[0].text)
                     elif 'Chegada do voo' in td[1].text:
                         #Creates list with all cities with 'Flight Arrived' status                    
                         if td[3].text.strip()[:3] in destination:
-                            chegada_list.append(td[0].text)
+                            arrival_list.append(td[0].text)
                         else:
                             arrival_date = 'N/A'  
                     elif 'NOTA FISCAL RETIDA' in td[1].text:
@@ -84,11 +84,11 @@ class AzulcargoScraper(object):
                     elif 'NOTA FISCAL LIBERADA' in td[1].text:
                         release_date = td[0].text
 
-                if chegada_list:
-                    arrival_date = chegada_list[0]
-                if embarque_list:
-                    ship_date = embarque_list[-1]
-                if not embarque_list:
+                if arrival_list:
+                    arrival_date = arrival_list[0]
+                if ship_list:
+                    ship_date = ship_list[-1]
+                if not ship_list:
                     ship_date = 'N/A'
 
             except AttributeError:
@@ -104,23 +104,23 @@ class AzulcargoScraper(object):
                 release_date, delivery_date, str(datetime.now())[:-7]
             ]
 
-            print(document_data)
-
-            with open(file, 'a', newline='') as write_file:
-                #Check if header exists
-                # if not csv.Sniffer().has_header(write_file.read(2048)):
-                #     writer.writerow(['awb_number', 'origin', 'destination', 'volumes', 
-                #     'weight', 'emit_date', 'ship_date', 'arrival_date', 
-                #     'retention_date', 'release_date', 'delivery_date', 'timestamp'])
-                writer = csv.writer(write_file)
+            file_exists = os.path.isfile(file)
+            with open(file, 'a', newline='') as csvFile:
+                writer = csv.writer(csvFile)
+                #check if file exists
+                if not file_exists:
+                    writer.writerow(['awb_number', 'origin', 'destination', 'volumes', 
+                    'weight', 'emit_date', 'ship_date', 'arrival_date', 
+                    'retention_date', 'release_date', 'delivery_date', 'timestamp'])
+                #Write the rest o the data
                 writer.writerow(document_data)
-            write_file.close()
+            csvFile.close()
             index += 1
         
         self.driver.quit()
 
 def command_line_input():
-    return str(input("\nType a AWB document number (limit of 30 per run): "))
+    return str(input("\nType AWB document numbers : "))
 
 #https://chrisalbon.com/python/data_wrangling/break_list_into_chunks_of_equal_size/
 def chunks(l, n):
