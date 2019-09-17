@@ -6,7 +6,7 @@ from datetime import datetime
 import csv
 import os.path
 
-class AzulcargoScraper(object):
+class PackageScraper(object):
     def __init__(self):
         self.url = 'http://www.azulcargo.com.br//Rastreio.aspx'
         self.driver = webdriver.PhantomJS()
@@ -128,7 +128,7 @@ def chunks(l, n):
         yield l[i:i+n]
 
 if __name__ == "__main__":
-    scraper = AzulcargoScraper()
+    scraper = PackageScraper()
     doclist = []
     user_input = ''
     while user_input != 'start':
