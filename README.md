@@ -1,7 +1,7 @@
 # package-tracking-webscraper
 Webscraper for a website with AJAX elements.
 
-This was done for the package/shipment tracking website http://www.azulcargo.com.br//Rastreio.aspx and is not an official product.
+This was done for a package/shipment tracking website and is not an official product.
 
 ## Installation
 This scraper requires selenium, beautifulSoup and PhantomJS.
